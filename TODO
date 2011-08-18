@@ -1,0 +1,38 @@
+
+
+
+TODO:
+* Operations
+   * Remove asumptions about paths from Operations. Build paths from outside.
+   * List possible backup media
+   * Make Operations interruptible gracefully
+* Build OMM (Operation Mode Manager)
+
+
+* Python-KDE GUI as plasmoid
+   * Plasmoid: http://techbase.kde.org/Development/Tutorials/Plasma
+* Qt-GUI for other desktops
+
+
+Others:
+* https://btrfs.wiki.kernel.org/index.php/SnapBtr
+* http://code.google.com/p/flyback/ (Python and Git)
+* http://gitorious.org/timevault/pages/Home (Looks promising but very incomplete)
+
+
+-------------------------
+	
+mount -tbtrfs -oloop,group,compress=lzo,user_subvol_rm_allowed,autodefrag,inode_cache /home/krase/backup/btrfstest.dat /home/krase/backup/snapshots/
+mount -tbtrfs -ogroup,compress=lzo,user_subvol_rm_allowed,autodefrag,inode_cache /dev/sdb /home/krase/backup/
+
+-------------------------
+
+def handler(sender=None):
+    print "got signal from %r" % sender
+
+#signal sender=:1.14 -> dest=(null destination) serial=1039 path=/org/freedesktop/UDisks; interface=org.freedesktop.UDisks; member=DeviceAdded
+#signal sender=:1.14 -> dest=(null destination) serial=1169 path=/org/freedesktop/UDisks; interface=org.freedesktop.UDisks; member=DeviceRemoved
+#object path "/org/freedesktop/UDisks/devices/sdb"
+
+iface.connect_to_signal("Hello", handler, sender_keyword='sender')
+

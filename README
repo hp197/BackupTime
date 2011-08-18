@@ -1,0 +1,8 @@
+
+BackupTime is going to be a personal backup tool for easy and fast backups under linux.
+
+The key features will be:
+
+* Very easy to use. So easy that it will lack some flexibility, but even your granny will be able to use it.
+* It will use some technology only available under Linux, so i will not try to port it to other operating systems.
+
