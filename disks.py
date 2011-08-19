@@ -24,6 +24,7 @@ def extract_string(data):
 
 class Disks(object):
 	INTERFACE = "org.freedesktop.UDisks"
+
 	def __init__(self):
 		self.bus = dbus.SystemBus()
 		self.proxy = self.bus.get_object("org.freedesktop.UDisks", "/org/freedesktop/UDisks")
@@ -56,6 +57,14 @@ class Disks(object):
 			print
 			for k,v in d.items():
 				print "%s: %s"%(k,v)
+
+
+	def create_filesystem(self, disk):
+		pass
+
+	def mount_filesystem(self, partition, mountpoint):
+		pass
+
 
 
 # vim:ts=3:sts=3:sw=3:noexpandtab
