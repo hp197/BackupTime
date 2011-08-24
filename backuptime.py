@@ -32,24 +32,32 @@ if __name__ == "__main__":
 	parser.add_argument('--version', action='version', version='%(prog)s 01')
 	subparsers = parser.add_subparsers(help='Sub-Commands', dest='subcommand')
 
-	parser_prep = subparsers.add_parser('prepare', help='Prepare Backup Volume')
+	parser_ld  = subparsers.add_parser('ld', help='List drives')
+
+	parser_prep = subparsers.add_parser('prepare', help='Prepare Drive')
 	parser_prep.add_argument('--drive', '-d', dest='drive', default=DRIVE_DEFAULT, type=str, help="Disk drive where the backups should be put to. Default: %s"%DRIVE_DEFAULT)
 	parser_prep.add_argument('--mountpoint', '-m', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Where to mount the backup volume. Default: %s"%MOUNT_DEFAULT)
 
 	parser_back = subparsers.add_parser('backup', help='Do the Backup')
 	parser_back.add_argument('--source', '-s', dest='source_dir', default=SOURCE_DEFAULT, type=str, help="What to backup")
 	parser_back.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
-	
+
 	parser_del  = subparsers.add_parser('delete', help='Delete a Backup')
 	parser_del.add_argument('--date', '-t', dest='date', type=int, required=True, help="Unix time of the backup to delete")
 	parser_del.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
 
 	options = parser.parse_args()
-	print
-	print "Options:",options
-	print
+	#print
+	#print "Options:",options
+	#print
 
 	op = Operations()
+
+	if options.subcommand == 'ld':
+		from disks import Disks
+		disks = Disks()
+		for i, dinfo in enumerate(disks.list_devices()):
+			print "%2d. Device: %s   Label: %s"%(i+1, dinfo.dev_file(), dinfo.label())
 
 	if options.subcommand == 'prepare':
 		if 1:

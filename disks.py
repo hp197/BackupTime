@@ -80,7 +80,16 @@ class DiskInfo(object):
 		return self.device_props.Get(self.UDISKS_DEV_IF, 'DriveCanDetach') == 1
 
 	def is_drive(self):
-		self.device_props.Get(self.UDISKS_DEV_IF, 'DeviceIsDrive') == 1
+		return self.device_props.Get(self.UDISKS_DEV_IF, 'DeviceIsDrive') == 1
+
+	def is_optical(self):
+		return self.device_props.Get(self.UDISKS_DEV_IF, 'DeviceIsOpticalDisc') == 1
+
+	def is_writeable(self):
+		return self.device_props.Get(self.UDISKS_DEV_IF, 'DeviceIsReadOnly') == 0
+
+	def is_partition(self):
+		return self.device_props.Get(self.UDISKS_DEV_IF, 'DeviceIsPartition') == 1
 
 	def __repr__(self):
 		ret = ""
@@ -97,6 +106,10 @@ class DiskInfo(object):
 		ret += "flags: %s\n"%self.flags()
 		ret += "can detach: %s\n"%self.can_detach()
 		ret += "is drive: %s\n"%self.is_drive()
+		ret += "is optical: %s\n"%self.is_optical()
+		ret += "is writeable: %s\n"%self.is_writeable()
+		ret += "is drive: %s\n"%self.is_drive()
+		ret += "is partition: %s\n"%self.is_partition()
 		return ret
 
 class Disks(object):
@@ -108,13 +121,18 @@ class Disks(object):
 		self.udisks = dbus.Interface(self.proxy, self.UDISKS_IF)
 
 	def list_devices(self):
-		data = []
 		for dev in self.udisks.EnumerateDevices():
 			device_obj = self.bus.get_object(self.UDISKS_IF, dev)
 			
 			dinfo = DiskInfo(device_obj)
-			data.append(dinfo)
-		return data
+			if dinfo.mount_path() in ('/', '/home'):
+				continue
+			if dinfo.fs() in ('iso9660','swap'):
+				continue
+			#if dinfo.dev_file() == '/dev/sda': continue
+			if dinfo.uuid() == '':
+				continue
+			yield dinfo
 
 	def get_dbus_dev(self, devfile):
 		ret = self.udisks.FindDeviceByDeviceFile(devfile)
