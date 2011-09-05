@@ -19,13 +19,11 @@ __all__ = ['']
 
 from operations import Operations
 
-def progress(complete, partial):
-	print "   %d\x0D"%((float(partial)/complete)*100),
 
 if __name__ == "__main__":
 
 	MOUNT_DEFAULT = '/media/backup'
-	SOURCE_DEFAULT = '/usr/src/linux-3.0.0-39-obj'
+	SOURCE_DEFAULT = '/usr/src/linux-3.0.3-41-obj/'
 	DRIVE_DEFAULT = '/dev/sdb'
 
 	parser = argparse.ArgumentParser(description='Do an incremental backup', prog='BackupTime')
@@ -39,8 +37,9 @@ if __name__ == "__main__":
 	parser_prep.add_argument('--mountpoint', '-m', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Where to mount the backup volume. Default: %s"%MOUNT_DEFAULT)
 
 	parser_back = subparsers.add_parser('backup', help='Do the Backup')
-	parser_back.add_argument('--source', '-s', dest='source_dir', default=SOURCE_DEFAULT, type=str, help="What to backup")
-	parser_back.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
+	parser_back.add_argument('--drive', '-d', dest='drive', type=str, help="Disk drive where the backups should be put to. Default: %s"%DRIVE_DEFAULT)
+	parser_back.add_argument('--source', '-s', dest='source_dir', type=str, help="What to backup")
+	#parser_back.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
 
 	parser_del  = subparsers.add_parser('delete', help='Delete a Backup')
 	parser_del.add_argument('--date', '-t', dest='date', type=int, required=True, help="Unix time of the backup to delete")
@@ -60,6 +59,7 @@ if __name__ == "__main__":
 			print "%2d. Device: %s   Label: %s"%(i+1, dinfo.dev_file(), dinfo.label())
 
 	if options.subcommand == 'prepare':
+		latest_dir = os.path.join(options.backup_dir, 'latest')
 		if 1:
 			logger.info("* Unmounting Volume")
 			ret = op.unmount_backup(options.drive)
@@ -78,31 +78,29 @@ if __name__ == "__main__":
 			logger.info(ret)
 		if 1:
 			logger.info("* Creating Subvolume")
-			op.prepare_fs(options.backup_dir)
+			ret = op.create_subvol(latest_dir)
+			logger.info(ret)
 
 		sys.exit(0)
 
 	if options.subcommand == 'backup':
-		lines = 0
-		if 1:
-			logger.info("* prepare rsync")
-			ok, ret = op.sync_dryrun(options.source_dir, options.backup_dir)
-			lines = ret
-			logger.info("Lines: %s"%ret)
-		if 1:
-			logger.info("* Doing rsnc")
-			ret = op.sync_data(options.source_dir, options.backup_dir, lambda x: progress(lines, x))
-			logger.info(ret)
-		if 1:
-			logger.info("* Creating snapshot")
-			ret = op.create_snapshot(time.time(), options.backup_dir)
-			logger.info(ret)
+		from disks import Disks
+		disks = Disks()
+		di = disks.create_disk_info( options.drive )
+		if not di.mount_path():
+			raise Exception("Drive %s is not mounted"%options.drive)
+	
+		from backup import Backup
+		backup = Backup(di, options.source_dir)
+		backup.do_backup()
 
 		sys.exit(0)
 
 	if options.subcommand == 'delete':
-		logger.info("Deleting snapshot backup_%d"%options.date)
-		ret = op.delete_snapshot(options.date, options.backup_dir)
+		voldir = "backup_%d"%int(options.date)
+		voldir = os.path.join(options.backup_dir, voldir)
+		logger.info("Deleting snapshot %s"%voldir)
+		ret = op.delete_snapshot(voldir)
 		logger.info(ret)
 
 		sys.exit(0)

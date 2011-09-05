@@ -5,7 +5,7 @@ import os, sys, time
 import logging
 import dbus
 
-__all__ = ['Disks',]
+__all__ = ['Disks', 'DiskInfo']
 
 logger = logging.getLogger("Disks")
 console = logging.StreamHandler(stream=sys.stdout)
@@ -32,13 +32,12 @@ class DiskInfo(object):
 
 	def create_filesystem(self, fstype, options = []):
 		assert(isinstance(disk_info, DiskInfo))
-		device = self.get_dbus_dev(disk_info.dev_file)
+		device = self.create_disk_info(disk_info.dev_file)
 		return device.FilesystemCreate(fstype, options)
 
 	def mount_filesystem(self, mountpoint, options = []):
 		fstype = 'btrfs'
 		return self.device_obj.FilesystemMount(fstype, options, mountpoint)
-
 
 
 	def model(self):
@@ -134,8 +133,10 @@ class Disks(object):
 				continue
 			yield dinfo
 
-	def get_dbus_dev(self, devfile):
-		ret = self.udisks.FindDeviceByDeviceFile(devfile)
+	def create_disk_info(self, devfile):
+		# device_file -> DiskInfo
+		dev = self.udisks.FindDeviceByDeviceFile(devfile)
+		device_obj = self.bus.get_object(self.UDISKS_IF, dev)
 		return DiskInfo(device_obj)
 
 

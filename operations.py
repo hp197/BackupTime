@@ -24,7 +24,7 @@ class ProcessRunner(object):
 				self.queue.append(line)
 			else:
 				if self.p.poll() != None:
-					print "Process done"
+					#print "Process done"
 					self.running = False
 				#time.sleep(0.010)
 		
@@ -46,7 +46,6 @@ class ProcessRunner(object):
 		return self.p.returncode
 
 class Operations(object):
-	LATEST_DIR = 'latest'
 	def create_btrfs(self, device, label):
 		assert( isinstance(device, basestring) )
 		assert( device.startswith('/dev/') )
@@ -73,37 +72,36 @@ class Operations(object):
 		ok, ret = self._call(cmd)
 		return ok
 
-	def prepare_fs(self, backup_base_dir):
-		cmd = ('/sbin/btrfs', 'subvolume', 'create', os.path.join(backup_base_dir, self.LATEST_DIR))
+	def create_subvol(self, sub_dir):
+		cmd = ('/sbin/btrfs', 'subvolume', 'create', sub_dir)
 		ok, ret = self._call(cmd)
+		#if not ok parent directory was probably not a btrfs
 		return ok
 
 	def unmount_backup(self, device):
 		assert( isinstance(device, basestring) )
 		assert( device.startswith('/dev/') )
+
 		cmd = ('umount', device)
 		ok, ret = self._call(cmd)
 		return ok
 
-	def create_snapshot(self, unix_time, backup_base):
-		destname = "backup_%d"%int(unix_time)
-		cmd = ('/sbin/btrfs', 'subvolume', 'snapshot', 
-				os.path.join(backup_base, self.LATEST_DIR), os.path.join(backup_base, destname))
+	def create_snapshot(self, source_dir, dest_dir):
+		cmd = ('/sbin/btrfs', 'subvolume', 'snapshot', source_dir, dest_dir)
 		ok, ret = self._call(cmd)
-		if ok and ret == '\n':
+		if ok and ret.startswith('Create'):
 			return True
 		else:
+			print ret
 			return False
 	
-	def delete_snapshot(self, unix_time, backup_base):
-		volname = "backup_%d"%int(unix_time)
-		volname = os.path.join(backup_base, volname)
-		print "Deleting: %s"%volname
-		cmd = ('/sbin/btrfs', 'subvolume', 'delete', volname)
+	def delete_snapshot(self, snapshot_dir):
+		print "Deleting: %s"%snapshot_dir
+		cmd = ('/sbin/btrfs', 'subvolume', 'delete', snapshot_dir)
 		ok, ret = self._call(cmd)
 		return ok
 
-	def sync_dryrun(self, source_dir, backup_base_dir):
+	def sync_dryrun(self, source_dir, dest_dir):
 		#erst --dry-run zum berechnen des gesamtfortschritts und dann ohne
 		excludes = ('foo', 'bar')
 		excludes = ['--exclude=%s'%x for x in excludes]
@@ -115,14 +113,14 @@ class Operations(object):
 				'--exclude=backup',
 				'--dry-run',
 			source_dir,
-			os.path.join(backup_base_dir, self.LATEST_DIR)
+			dest_dir,
 		      ]
 		cmd.extend( excludes )	
 		ok, ret = self._call(cmd)
 		ret = ret.split('\n')
 		return ok, len(ret)
 
-	def sync_data(self, source_dir, backup_base_dir, progress_func):
+	def sync_data(self, source_dir, dest_dir, progress_func):
 		excludes = ('backup', 'bar')
 		excludes = ['--exclude=%s'%x for x in excludes]
 		cmd = ['rsync','-avzpHAX','--skip-compress=jpg:mpg:avi:mp3',
@@ -132,7 +130,7 @@ class Operations(object):
 				'--delete-excluded',
 				'--exclude=backup',
 			source_dir,
-			os.path.join(backup_base_dir, self.LATEST_DIR)
+			dest_dir,
 		      ]
 		cmd.extend( excludes )	
 
