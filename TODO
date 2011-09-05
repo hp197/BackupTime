@@ -3,9 +3,8 @@
 
 TODO:
 * Operations
-   * Remove asumptions about paths from Operations. Build paths from outside.
-   * List possible backup media
-   * Make Operations interruptible gracefully
+   * List possible backup media: How to find out system devices as '/'?
+   * Make Operations gracefully interruptible 
 * Build OMM (Operation Mode Manager)
 
 
@@ -13,6 +12,7 @@ TODO:
    * Plasmoid: http://techbase.kde.org/Development/Tutorials/Plasma
 * Qt-GUI for other desktops
 
+* respond to dbus signals
 
 Others:
 * https://btrfs.wiki.kernel.org/index.php/SnapBtr

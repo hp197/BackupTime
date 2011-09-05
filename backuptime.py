@@ -21,11 +21,6 @@ from operations import Operations
 
 
 if __name__ == "__main__":
-
-	MOUNT_DEFAULT = '/media/backup'
-	SOURCE_DEFAULT = '/usr/src/linux-3.0.3-41-obj/'
-	DRIVE_DEFAULT = '/dev/sdb'
-
 	parser = argparse.ArgumentParser(description='Do an incremental backup', prog='BackupTime')
 	parser.add_argument('--version', action='version', version='%(prog)s 01')
 	subparsers = parser.add_subparsers(help='Sub-Commands', dest='subcommand')
@@ -33,17 +28,16 @@ if __name__ == "__main__":
 	parser_ld  = subparsers.add_parser('ld', help='List drives')
 
 	parser_prep = subparsers.add_parser('prepare', help='Prepare Drive')
-	parser_prep.add_argument('--drive', '-d', dest='drive', default=DRIVE_DEFAULT, type=str, help="Disk drive where the backups should be put to. Default: %s"%DRIVE_DEFAULT)
-	parser_prep.add_argument('--mountpoint', '-m', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Where to mount the backup volume. Default: %s"%MOUNT_DEFAULT)
+	parser_prep.add_argument('--drive', '-d', dest='drive', type=str, help="Disk drive where the backups should be put to.")
+	parser_prep.add_argument('--mountpoint', '-m', dest='backup_dir', type=str, help="Where to mount the backup volume.")
 
 	parser_back = subparsers.add_parser('backup', help='Do the Backup')
-	parser_back.add_argument('--drive', '-d', dest='drive', type=str, help="Disk drive where the backups should be put to. Default: %s"%DRIVE_DEFAULT)
 	parser_back.add_argument('--source', '-s', dest='source_dir', type=str, help="What to backup")
-	#parser_back.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
+	parser_back.add_argument('--drive', '-d', dest='drive', type=str, help="Disk drive where the backups should be put to.")
 
 	parser_del  = subparsers.add_parser('delete', help='Delete a Backup')
 	parser_del.add_argument('--date', '-t', dest='date', type=int, required=True, help="Unix time of the backup to delete")
-	parser_del.add_argument('--dest', '-d', dest='backup_dir', default=MOUNT_DEFAULT, type=str, help="Mount point of the backup volume")
+	parser_del.add_argument('--drive', '-d', dest='drive', type=str, help="Disk drive where the backups should be put to.")
 
 	options = parser.parse_args()
 	#print
@@ -87,8 +81,6 @@ if __name__ == "__main__":
 		from disks import Disks
 		disks = Disks()
 		di = disks.create_disk_info( options.drive )
-		if not di.mount_path():
-			raise Exception("Drive %s is not mounted"%options.drive)
 	
 		from backup import Backup
 		backup = Backup(di, options.source_dir)
@@ -97,11 +89,13 @@ if __name__ == "__main__":
 		sys.exit(0)
 
 	if options.subcommand == 'delete':
-		voldir = "backup_%d"%int(options.date)
-		voldir = os.path.join(options.backup_dir, voldir)
-		logger.info("Deleting snapshot %s"%voldir)
-		ret = op.delete_snapshot(voldir)
-		logger.info(ret)
+		from disks import Disks
+		disks = Disks()
+		di = disks.create_disk_info( options.drive )
+		
+		from backup import Backup
+		backup = Backup(di)
+		backup.delete_backup(options.date)
 
 		sys.exit(0)
 
