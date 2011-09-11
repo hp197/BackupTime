@@ -27,17 +27,17 @@ class DiskInfo(object):
 	UDISKS_DEV_IF = 'org.freedesktop.UDisks.Device'
 
 	def __init__(self, device_obj):
-		self.device_obj = device_obj
+		self.device_obj = device_obj #proxy
 		self.device_props = dbus.Interface(device_obj, dbus.PROPERTIES_IFACE)
+		self.device_if = dbus.Interface(device_obj, self.UDISKS_DEV_IF)
 
 	def create_filesystem(self, fstype, options = []):
-		assert(isinstance(disk_info, DiskInfo))
-		device = self.create_disk_info(disk_info.dev_file)
-		return device.FilesystemCreate(fstype, options)
+		#assert(isinstance(disk_info, DiskInfo))
+		return self.device_if.FilesystemCreate(fstype, options)
 
-	def mount_filesystem(self, mountpoint, options = []):
+	def mount_filesystem(self, options = ['rw',]):
 		fstype = 'btrfs'
-		return self.device_obj.FilesystemMount(fstype, options, mountpoint)
+		return self.device_if.FilesystemMount(fstype, options)#, mountpoint)
 
 
 	def model(self):
@@ -145,5 +145,11 @@ if __name__ == '__main__':
 	drives = disks.list_devices()
 	for d in drives:
 		print d
+		if 0: #d.dev_file() == '/dev/sdb':
+			print d
+			#d.create_filesystem('btrfs')
+			#options = ['group','compress=lzo','user_subvol_rm_allowed','autodefrag','inode_cache']
+			options = ['rw','noatime', 'compress=lzo']
+			d.mount_filesystem(options)
 
 # vim:ts=3:sts=3:sw=3:noexpandtab
