@@ -1,7 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Autor: Helge Jensen <hej@actua.dk>
+# Original Autor: Helge Jensen <hej@actua.dk>
+# Maintained by: Henry Paulissen <henry@nitronetworks.nl>
+# 
+# URL: https://github.com/hp197/snapbtr
+#
 """
 snapbtr is a small utility that keeps snapshots of btrfs filesystems.
 
@@ -201,6 +205,7 @@ def cleandir(operations, targets):
     keep_backups = targets.keep_backups
     target_fsp = targets.target_freespace
     target_backups = targets.target_backups
+    target_removed = targets.target_removed
     was_above_target_freespace = None
     was_above_target_backups = None
     last_dirs = []
@@ -225,6 +230,12 @@ def cleandir(operations, targets):
             if dirs_len <= keep_backups:
                 print "Reached number of backups to keep: ", dirs_len
                 break
+
+        if target_removed is not None:
+            if target_removed <= 0:
+                print "Reached max numbers of snapshots to delete"
+                break
+            target_removed -= 1
 
         if target_fsp is not None:
             fsp = operations.freespace()
@@ -286,7 +297,8 @@ def main(argv):
                     None: 0,
                     'K': 1,
                     'M': 2,
-                    'G': 3 }
+                    'G': 3,
+                    'T': 4 }
                 form = "([0-9]+)(%s)?" % \
                     "|".join(x for x in mods.iterkeys() if x is not None)
                 m = re.match(form, target_str, re.IGNORECASE)
@@ -332,6 +344,13 @@ def main(argv):
                             help = '''Cleanup PATH until at least SIZE is free.
 
 SIZE is #bytes, or given with K, M, G or T respectively for kilo, ...''')
+
+        target_group.add_argument('--max-removed', '-M',
+                                  dest = 'target_removed',
+                                  default = None,
+                                  metavar = '#', type = int,
+                                  help = 'Cleanup max # snapshots each run')
+
         target_group.add_argument('--target-backups', '-B',
                                   dest='target_backups',
                                   metavar = '#', type = int,
@@ -341,7 +360,7 @@ SIZE is #bytes, or given with K, M, G or T respectively for kilo, ...''')
                             metavar = '#', type = int,
                                   default = DEFAULT_KEEP_BACKUPS,
                                   help = 'Stop cleaning when K backups remain')
-    
+
         snap_group_x = parser.add_argument_group(
             title = 'Snapshotting')
         snap_group = parser.add_mutually_exclusive_group(required=False)
